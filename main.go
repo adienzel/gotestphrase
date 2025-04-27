@@ -12,8 +12,15 @@ import (
 	"os"
 )
 
+func padPassphrase(passphrase string, length int) []byte {
+	padded := make([]byte, length)
+	copy(padded, passphrase)
+	return padded
+}
+
 func decryptKey(encryptedKey []byte, passphrase string) ([]byte, error) {
-	key := []byte(passphrase) // Use a secure key derivation function in production
+	key := padPassphrase(passphrase, 16) // Pad passphrase to 16 bytes
+	//key := []byte(passphrase) // Use a secure key derivation function in production
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		fmt.Println("aes.NewCipher(key) ", err)
