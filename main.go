@@ -80,7 +80,7 @@ func loadKeyPair(certFile, keyFile, passphrase string) (tls.Certificate, error) 
 
 func main() {
 	// Define the passphrase
-	passphrase := "123456"
+	passphrase := "1234567890abcdef"
 
 	// Load client certificate and key with passphrase
 	cert, err := loadKeyPair("client.crt", "client.key", passphrase)
