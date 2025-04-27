@@ -19,7 +19,7 @@ func padPassphrase(passphrase string, length int) []byte {
 }
 
 func decryptKey(encryptedKey []byte, passphrase string) ([]byte, error) {
-	key := padPassphrase(passphrase, 16) // Pad passphrase to 16 bytes
+	key := padPassphrase(passphrase, 32) // Pad passphrase to 16 bytes
 	//key := []byte(passphrase) // Use a secure key derivation function in production
 	block, err := aes.NewCipher(key)
 	if err != nil {
