@@ -36,7 +36,12 @@ func decryptKey(encryptedKey []byte, passphrase string) ([]byte, error) {
 	nonceSize := gcm.NonceSize()
 	nonce, ciphertext := encryptedKey[:nonceSize], encryptedKey[nonceSize:]
 
-	return gcm.Open(nil, nonce, ciphertext, nil)
+	arr, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		fmt.Println("arr, err := gcm.Open(nil, nonce, ciphertext, nil) ", err)
+	}
+
+	return arr, err
 }
 
 func loadKeyPair(certFile, keyFile, passphrase string) (tls.Certificate, error) {
