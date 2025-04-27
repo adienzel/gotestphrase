@@ -1,38 +1,65 @@
 package main
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 )
 
+func decryptKey(encryptedKey []byte, passphrase string) ([]byte, error) {
+	key := []byte(passphrase) // Use a secure key derivation function in production
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		fmt.Println("aes.NewCipher(key) ", err)
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		fmt.Println("cipher.NewGCM(block) ", err)
+		return nil, err
+	}
+
+	nonceSize := gcm.NonceSize()
+	nonce, ciphertext := encryptedKey[:nonceSize], encryptedKey[nonceSize:]
+
+	return gcm.Open(nil, nonce, ciphertext, nil)
+}
+
 func loadKeyPair(certFile, keyFile, passphrase string) (tls.Certificate, error) {
-	certPEMBlock, err := ioutil.ReadFile(certFile)
+	certPEMBlock, err := os.ReadFile(certFile)
 	if err != nil {
+		fmt.Println("ertPEMBlock, err := os.ReadFile(certFile) ", err)
 		return tls.Certificate{}, err
 	}
 
-	keyPEMBlock, err := os.ReadFile(keyFile)
+	encryptedKeyPEMBlock, err := os.ReadFile(keyFile)
 	if err != nil {
+		fmt.Println("encryptedKeyPEMBlock, err := os.ReadFile(keyFile) ", err)
 		return tls.Certificate{}, err
 	}
 
-	keyBlock, _ := pem.Decode(keyPEMBlock)
+	keyBlock, _ := pem.Decode(encryptedKeyPEMBlock)
 	if keyBlock == nil {
+		fmt.Println("keyBlock, _ := pem.Decode(encryptedKeyPEMBlock) ", err)
 		return tls.Certificate{}, fmt.Errorf("failed to decode PEM block containing private key")
 	}
 
-	decryptedKeyBlock, err := x509.DecryptPEMBlock(keyBlock, []byte(passphrase))
+	decryptedKey, err := decryptKey(keyBlock.Bytes, passphrase)
 	if err != nil {
+		fmt.Println("decryptedKey, err := decryptKey(keyBlock.Bytes, passphrase) ", err)
 		return tls.Certificate{}, err
 	}
 
-	key, err := x509.ParsePKCS1PrivateKey(decryptedKeyBlock)
+	key, err := x509.ParsePKCS1PrivateKey(decryptedKey)
 	if err != nil {
+		fmt.Println("key, err := x509.ParsePKCS1PrivateKey(decryptedKey) ", err)
 		return tls.Certificate{}, err
 	}
 
@@ -56,7 +83,7 @@ func main() {
 	}
 
 	// Load CA certificate
-	caCert, err := ioutil.ReadFile("ca.crt")
+	caCert, err := os.ReadFile("ca.crt")
 	if err != nil {
 		fmt.Println("Error loading CA certificate:", err)
 		return
@@ -94,7 +121,7 @@ func main() {
 	defer resp.Body.Close()
 
 	// Read response
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("Error reading response:", err)
 		return
